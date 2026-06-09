@@ -45,13 +45,20 @@ async function register(req,res){
 
 async function loginUser(req,res){
     const {email,password}=req.body;
+    console.log("Email from postman",email);
+    const users = await userModel.find({});
+    console.log("All users in DB: ", users);
     const user=await userModel.findOne({email});
+    console.log("User found: ",user);
     if(!user){
         return res.status(401).json({
             message:'email does not exist'
         })
     }
-    const isPasswordValid=await bcrypt.compare(password,user.password);
+    const isPasswordValid=await bcrypt.compare(
+        password,
+        user.password
+    );
     if(!isPasswordValid){
         return res.status(401).json({
             message:'invalid password'
