@@ -70,57 +70,73 @@ const getUserTasks=async(req,res)=>{
     }
 }
 
-const acceptTask=async(req,res)=>{
-    try{
-        const tasks = await taskModel.findByIdAndUpdate(req.params.id,
-            {
-                active:true,
-                newTask:false
-            },{new:true}
+const acceptTask = async (req, res) => {
+    try {
+        const task = await taskModel.findByIdAndUpdate(  // ← const task = add kar
+            req.params.id,
+            { active: true, newTask: false },
+            { returnDocument: 'after' }
         );
-        return res.status(201).json({
-            message:"Task accepted",
-            tasks
+
+        if (!task) return res.status(404).json({ message: "Task not found" });
+
+        await userModel.findByIdAndUpdate(task.assignTo, {
+            $inc: {
+                "taskCounts.newTask": -1,
+                "taskCounts.active": 1
+            }
         });
-    }catch(err){
-        return res.status(500).json({
-            message:"Error"
-        })
+
+        return res.status(200).json({ message: "Task accepted", task });
+    } catch (err) {
+        console.error("acceptTask error:", err.message);
+        return res.status(500).json({ message: "Error", error: err.message });
     }
 }
 
 const completeTask = async (req, res) => {
+    try {
+        const task = await taskModel.findByIdAndUpdate(  // ← const task = add karo
+            req.params.id,
+            { active: false, completed: true },
+            { new: true }
+        );
 
-  try {
+        if (!task) return res.status(404).json({ message: "Task not found" });
 
-    await taskModel.findByIdAndUpdate(req.params.id, {
-      active: false,
-      completed: true
-    },{new:true});
+        await userModel.findByIdAndUpdate(task.assignTo, {
+            $inc: {
+                "taskCounts.active": -1,
+                "taskCounts.completed": 1
+            }
+        });
 
-    res.json({ message: "Task completed" });
-
-  } catch (err) {
-    res.status(500).json({ message: "Error" });
-  }
-
+        res.json({ message: "Task completed" });
+    } catch (err) {
+        res.status(500).json({ message: "Error", error: err.message });
+    }
 };
 
-
 const failTask = async (req, res) => {
+    try {
+        const task = await taskModel.findByIdAndUpdate(  // ← const task = add karo
+            req.params.id,
+            { active: false, failed: true },
+            { new: true }
+        );
 
-  try {
+        if (!task) return res.status(404).json({ message: "Task not found" });
 
-    await taskModel.findByIdAndUpdate(req.params.id, {
-      active: false,
-      failed: true
-    },{new:true});
+        await userModel.findByIdAndUpdate(task.assignTo, {
+            $inc: {
+                "taskCounts.active": -1,
+                "taskCounts.failed": 1
+            }
+        });
 
-    res.json({ message: "Task failed" });
-
-  } catch (err) {
-    res.status(500).json({ message: "Error" });
-  }
-
+        res.json({ message: "Task failed" });
+    } catch (err) {
+        res.status(500).json({ message: "Error", error: err.message });
+    }
 };
 module.exports={ createTask, getUserTasks, getAllUserTasks,acceptTask,completeTask,failTask}
